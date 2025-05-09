@@ -1,7 +1,91 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#define SDL_FLAGS SDL_INIT_VIDEO
+
+#define WINDOW_TITLE "placeholder"
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 600
+
+// makes easier to pass around into functions as a struct
+struct game {
+	SDL_Window* window;
+	SDL_Renderer* renderer;
+};
+
+// sans complier issues
+bool game_init_sdl(struct game *g);
+void leave(struct game* g);
+void run(struct game* g);
+
+// initialize "game"
+bool game_init_sdl(struct game* g) {
+	if (!SDL_Init(SDL_FLAGS)) {
+		SDL_Log("SDL Init Error: %s", SDL_GetError());
+		return 0;
+	}
+	
+	// create window
+	g->window = SDL_CreateWindow(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE);
+	if (g->window == NULL) {
+		SDL_Log("SDL Window Error: %s", SDL_GetError());
+		return 0;
+	}
+
+	// create renderer
+	g->renderer = SDL_CreateRenderer(g->window, NULL);
+	if (g->renderer == NULL) {
+		SDL_Log("SDL Renderer Error: %s", SDL_GetError());
+		return 0;
+	}
+
+	return 1;
+}
+
+// free memory function
+void leave(struct game *g) {
+	if (g->renderer) {
+		SDL_DestroyRenderer(g->renderer);
+		g->renderer = NULL;
+	}
+	if (g->window) {
+		SDL_DestroyWindow(g->window);
+		g->window = NULL;
+	}
+	SDL_Quit();
+}
+
+// run prgram fucnction
+void run(struct game *g) {
+
+	SDL_Delay(100); //fixes render bug in earlier versions
+	SDL_SetRenderDrawColor(g->renderer, 69, 0, 190, 255);
+	SDL_RenderClear(g->renderer);
+	SDL_RenderPresent(g->renderer);
+
+	SDL_Delay(1);
+}
+
+int main(int argc, char* argv[]) {
+	bool exit_status = EXIT_FAILURE;
+
+	struct game foundation = { 0 };
+
+	if (game_init_sdl(&foundation)) {
+		run(&foundation);
+		exit_status = EXIT_SUCCESS;
+	}
 
 
+	leave(&foundation);
+	return exit_status;
+}
+
+//OLD
+/*
 int main(int argc, char* argv[]) {
 	SDL_Window* window = NULL;
 	SDL_Renderer* renderer = NULL;
@@ -61,4 +145,4 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 
-}
+}*/
