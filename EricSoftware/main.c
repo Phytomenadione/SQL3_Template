@@ -14,35 +14,40 @@
 struct game {
 	SDL_Window* window;
 	SDL_Renderer* renderer;
+	SDL_Event event;
+	bool isRunning;
 };
 
 // sans complier issues
 bool game_init_sdl(struct game *g);
 void leave(struct game* g);
-void run(struct game* g);
+void pgrm_run(struct game* g);
+void events(struct game* g);
+void draw(struct game* g);
+bool pgrm_new(struct game* g);
 
 // initialize "game"
 bool game_init_sdl(struct game* g) {
 	if (!SDL_Init(SDL_FLAGS)) {
 		SDL_Log("SDL Init Error: %s", SDL_GetError());
-		return 0;
+		return false;
 	}
 	
 	// create window
 	g->window = SDL_CreateWindow(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE);
 	if (g->window == NULL) {
 		SDL_Log("SDL Window Error: %s", SDL_GetError());
-		return 0;
+		return false;
 	}
 
 	// create renderer
 	g->renderer = SDL_CreateRenderer(g->window, NULL);
 	if (g->renderer == NULL) {
 		SDL_Log("SDL Renderer Error: %s", SDL_GetError());
-		return 0;
+		return false;
 	}
 
-	return 1;
+	return true;
 }
 
 // free memory function
@@ -56,29 +61,60 @@ void leave(struct game *g) {
 		g->window = NULL;
 	}
 	SDL_Quit();
+	printf("Things were purged from memory don't panick.\n");
+}
+
+// event function
+void events(struct game *g) {
+	while (SDL_PollEvent(&g->event)) {
+		switch (g->event.type) {
+		case SDL_EVENT_QUIT:
+			g->isRunning = false;
+			printf("Successfully quit.\n");
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+//draw
+
+void draw(struct game* g) {
+	SDL_RenderClear(g->renderer);
+	SDL_RenderPresent(g->renderer);
 }
 
 // run prgram fucnction
-void run(struct game *g) {
+void pgrm_run(struct game *g) {
+	while (g->isRunning) {
+		events(g);
+		//SDL_SetRenderDrawColor(g->renderer, 69, 0, 190, 255);
+		draw(g);
 
-	SDL_Delay(100); //fixes render bug in earlier versions
-	SDL_SetRenderDrawColor(g->renderer, 69, 0, 190, 255);
-	SDL_RenderClear(g->renderer);
-	SDL_RenderPresent(g->renderer);
+		SDL_Delay(300);
+	}
+}
 
-	SDL_Delay(1);
+// prgoram constrcutor
+bool pgrm_new(struct game* g){
+	if (!game_init_sdl(g)) {
+		return false;
+	}
+	g->isRunning = true;
+	return true;
+
 }
 
 int main(int argc, char* argv[]) {
 	bool exit_status = EXIT_FAILURE;
 
-	struct game foundation = { 0 };
+	struct game foundation = {0};
 
-	if (game_init_sdl(&foundation)) {
-		run(&foundation);
+	if (pgrm_new(&foundation)) {
+		pgrm_run(&foundation);
 		exit_status = EXIT_SUCCESS;
 	}
-
 
 	leave(&foundation);
 	return exit_status;
