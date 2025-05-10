@@ -20,11 +20,11 @@ struct game {
 
 // sans complier issues
 bool game_init_sdl(struct game *g);
-void leave(struct game* g);
+void leave(struct game **foundation);
 void pgrm_run(struct game* g);
 void events(struct game* g);
 void draw(struct game* g);
-bool pgrm_new(struct game* g);
+bool pgrm_new(struct game **foundation);
 
 // initialize "game"
 bool game_init_sdl(struct game* g) {
@@ -51,17 +51,35 @@ bool game_init_sdl(struct game* g) {
 }
 
 // free memory function
-void leave(struct game *g) {
-	if (g->renderer) {
-		SDL_DestroyRenderer(g->renderer);
-		g->renderer = NULL;
+void leave(struct game **foundation) {
+	if (*foundation) {
+		struct game *g = *foundation;
+		if (g->renderer) {
+			SDL_DestroyRenderer(g->renderer);
+			g->renderer = NULL;
+		}
+		if (g->window) {
+			SDL_DestroyWindow(g->window);
+			g->window = NULL;
+		}
+		SDL_Quit();
+
+		//printf("pointer: %p\n", g);
+		//printf("pointer: %p\n", *foundation);
+
+		free(g);
+
+		//printf("pointer: %p\n", g);
+		//printf("pointer: %p\n", *foundation);
+
+		g = NULL;
+		*foundation = NULL;
+
+		//printf("pointer: %p\n", g);
+		//printf("pointer: %p\n", *foundation);
+
+		printf("Things were purged from memory don't panick.\n");
 	}
-	if (g->window) {
-		SDL_DestroyWindow(g->window);
-		g->window = NULL;
-	}
-	SDL_Quit();
-	printf("Things were purged from memory don't panick.\n");
 }
 
 // event function
@@ -92,12 +110,21 @@ void pgrm_run(struct game *g) {
 		//SDL_SetRenderDrawColor(g->renderer, 69, 0, 190, 255);
 		draw(g);
 
-		SDL_Delay(300);
+		SDL_Delay(16);
 	}
 }
 
 // prgoram constrcutor
-bool pgrm_new(struct game* g){
+bool pgrm_new(struct game** foundation){
+	*foundation = calloc(1, sizeof(struct game));
+
+	if (*foundation == NULL) {
+		fprintf(stderr,"You caused a memory leak in prgm_new, idiot.\n");
+		return false;
+	}
+	// not going through and changing eveything
+	struct game* g = *foundation;
+
 	if (!game_init_sdl(g)) {
 		return false;
 	}
@@ -109,14 +136,18 @@ bool pgrm_new(struct game* g){
 int main(int argc, char* argv[]) {
 	bool exit_status = EXIT_FAILURE;
 
-	struct game foundation = {0};
+	struct game *foundation = NULL;
+
+	//printf("Test %p\n", foundation);
 
 	if (pgrm_new(&foundation)) {
-		pgrm_run(&foundation);
+		//printf("Test %p\n", foundation);
+		pgrm_run(foundation);
 		exit_status = EXIT_SUCCESS;
 	}
 
 	leave(&foundation);
+	//printf("Test %p\n", foundation);
 	return exit_status;
 }
 
